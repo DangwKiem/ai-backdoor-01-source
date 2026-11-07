@@ -1,0 +1,6 @@
+/private/
+/roster.txt
+/.venv/
+**/__pycache__/
+/student/evidence/
+/student/probe.py

@@ -1,0 +1,8 @@
+AI-Backdoor-01
+
+In an analyst terminal, run:
+  cd ~/ai-backdoor
+  less README.md
+
+Ask your instructor for the SecureMail AI URL and your individual login code.
+Save evidence in ~/ai-backdoor/evidence before running stoplab.

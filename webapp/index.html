@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecureMail AI · AI-Backdoor-01</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: #162c3f; background: #eff4f8; }
+  main { max-width: 730px; padding: 2rem 1rem 3rem; margin: auto; }
+  h1 { margin: 0; font-size: 2.25rem; }
+  h2 { margin-top: 0; }
+  section { padding: 1.25rem; margin-top: 1rem; background: white; border: 1px solid #cbd9e3; border-radius: .7rem; }
+  label { display: block; margin: .7rem 0 .2rem; font-weight: 600; }
+  input, textarea { width: 100%; padding: .65rem; border: 1px solid #879caf; border-radius: .3rem; font: inherit; }
+  button { margin-top: .8rem; padding: .6rem 1rem; color: white; background: #17486b; border: 0; border-radius: .3rem; font: inherit; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  pre { padding: .8rem; border-radius: .3rem; background: #eff4f8; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #status { min-height: 1.5em; }
+</style>
+<main>
+  <h1>SecureMail AI</h1>
+  <p>AI-Backdoor-01 · Xác minh hành vi trên mô hình triển khai</p>
+  <section id="login-panel" aria-labelledby="login-heading">
+    <h2 id="login-heading">Đăng nhập</h2>
+    <form id="login">
+      <label for="student-id">Mã sinh viên</label>
+      <input id="student-id" autocomplete="username" required maxlength="40">
+      <label for="code">Mã đăng nhập được cấp</label>
+      <input id="code" type="password" autocomplete="current-password" required maxlength="128">
+      <button>Đăng nhập</button>
+    </form>
+  </section>
+  <section id="analysis-panel" aria-labelledby="analysis-heading" hidden>
+    <h2 id="analysis-heading">Phân loại email</h2>
+    <p id="identity"></p>
+    <form id="classify">
+      <label for="email">Nội dung email thử nghiệm</label>
+      <textarea id="email" rows="5" required maxlength="8192"></textarea>
+      <button>Phân tích</button>
+    </form>
+    <pre id="result" aria-live="polite" hidden></pre>
+    <button type="button" id="download" disabled>Tải web-proof.json</button>
+    <button type="button" id="logout">Đăng xuất</button>
+  </section>
+  <p id="status" role="status"></p>
+</main>
+<script>
+  const byId = (id) => document.getElementById(id);
+  let proof;
+
+  function clearResult() {
+    proof = undefined;
+    byId("result").textContent = "";
+    byId("result").hidden = true;
+    byId("download").disabled = true;
+  }
+
+  async function post(path, data) {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (response.status === 204) return null;
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(typeof result.detail === "string" ? result.detail : "Yêu cầu không hợp lệ.");
+    }
+    return result;
+  }
+
+  function bindForm(id, handler) {
+    byId(id).addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button");
+      button.disabled = true;
+      byId("status").textContent = "";
+      try {
+        await handler();
+      } catch (error) {
+        byId("status").textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  bindForm("login", async () => {
+    const code = byId("code").value;
+    byId("code").value = "";
+    const result = await post("/api/login", {
+      student_id: byId("student-id").value.trim(),
+      code
+    });
+    byId("identity").textContent = "Phiên đăng nhập của " + result.student_id;
+    byId("login-panel").hidden = true;
+    byId("analysis-panel").hidden = false;
+    byId("email").focus();
+  });
+
+  bindForm("classify", async () => {
+    clearResult();
+    const text = byId("email").value;
+    const result = await post("/api/classify", { text });
+    byId("result").textContent = JSON.stringify(result, null, 2);
+    byId("result").hidden = false;
+    if (result.confirmed) {
+      proof = { text, ...result };
+      byId("download").disabled = false;
+    }
+  });
+
+  byId("download").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(proof, null, 2) + "\n"], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "web-proof.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  byId("logout").addEventListener("click", async () => {
+    try {
+      await post("/api/logout", {});
+      clearResult();
+      byId("email").value = "";
+      byId("status").textContent = "";
+      byId("analysis-panel").hidden = true;
+      byId("login-panel").hidden = false;
+    } catch (error) {
+      byId("status").textContent = error.message;
+    }
+  });
+</script>

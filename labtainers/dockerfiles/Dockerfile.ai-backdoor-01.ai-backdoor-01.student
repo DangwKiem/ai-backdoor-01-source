@@ -1,0 +1,32 @@
+ARG registry=labtainers
+FROM $registry/labtainer.firefox3
+
+ARG lab
+ARG labdir
+ARG imagedir
+ARG user_name
+ARG password
+ARG apt_source
+ARG version
+LABEL version=$version
+ENV APT_SOURCE=$apt_source
+RUN /usr/bin/apt-source.sh
+
+ADD $labdir/$imagedir/sys_tar/sys.tar /
+ADD $labdir/sys_$lab.tar.gz /
+RUN apt-get update && apt-get install -y --no-install-recommends python3-venv ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/ai-backdoor/venv \
+    && /opt/ai-backdoor/venv/bin/pip install --no-cache-dir -r /opt/ai-backdoor/requirements.txt
+RUN deluser --remove-home ubuntu \
+    && useradd -ms /bin/bash "$user_name" \
+    && echo "$user_name:$password" | chpasswd \
+    && adduser "$user_name" sudo
+
+USER $user_name
+ENV HOME=/home/$user_name
+ADD $labdir/$imagedir/home_tar/home.tar $HOME
+RUN rm -f "$HOME/home.tar"
+ADD --chown=$user_name:$user_name $labdir/$lab.tar.gz $HOME
+USER root
+CMD ["/bin/bash", "-c", "exec /sbin/init --log-target=journal 3>&1"]

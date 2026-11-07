@@ -1,0 +1,12 @@
+**
+!student/
+!student/inference.py
+!student/model_original.onnx
+!student/model_deployed.onnx
+!student/vocabulary.json
+!student/requirements-runtime.txt
+!webapp/
+!webapp/Dockerfile
+!webapp/app.py
+!webapp/auth.py
+!webapp/index.html

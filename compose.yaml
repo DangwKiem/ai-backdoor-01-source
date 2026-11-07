@@ -1,0 +1,23 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: webapp/Dockerfile
+    environment:
+      LAB_AUTH_FILE: /run/secrets/lab_auth
+      LAB_COOKIE_SECURE: ${LAB_COOKIE_SECURE:-1}
+    secrets:
+      - lab_auth
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).close()"]
+      interval: 10s
+      timeout: 4s
+      retries: 5
+secrets:
+  lab_auth:
+    file: ${LAB_AUTH_FILE_HOST:-./private/auth.json}
