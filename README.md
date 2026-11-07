@@ -5,12 +5,14 @@ Lab thực hành 90–120 phút cho sinh viên điều tra mô hình ONNX phân 
 | Thành phần | Nơi chạy | Vai trò |
 | --- | --- | --- |
 | Analyst | Container Labtainers của từng sinh viên | SHA-256, ONNX Runtime, Netron, staging cục bộ, thu minh chứng |
-| SecureMail AI | Docker Compose trên máy giảng viên | Phiên đăng nhập, kiểm tra hành vi trên mô hình triển khai, cấp mã HMAC-SHA256 |
-| Công cụ chấm | Máy giảng viên | Đọc gói `.lab`, đối chiếu kết quả và xác minh mã theo danh sách lớp |
+| SecureMail AI | Container Labtainers tự khởi động | Phiên đăng nhập, kiểm tra mô hình triển khai, cấp mã HMAC-SHA256 thực hành |
+| Công cụ chấm | Máy giảng viên, nếu thu bài | Đọc gói `.lab`, đối chiếu kết quả inference và minh chứng |
 
-## 1. Chuẩn bị web app dùng chung
+## 1. Tùy chọn chạy web app dùng chung cho lớp
 
-Trên máy Linux của giảng viên, trong thư mục này, tạo `roster.txt` với một mã sinh viên mỗi dòng. Mã phân biệt chữ hoa/thường, dùng ký tự ASCII chữ, số, gạch ngang hoặc gạch dưới. Để kiểm thử, có thể dùng một mã giả trong một danh sách lớp riêng.
+Bản Labtainers tự chạy đủ bốn nhiệm vụ. SecureMail AI cục bộ sinh khóa khi container khởi động lần đầu và giữ khóa qua các lần khởi động lại của cùng container. Nếu lớp cần xác minh HMAC theo danh sách sinh viên, có thể chạy bản SecureMail AI dùng chung bằng Compose.
+
+Trên máy Linux của giảng viên, tạo `roster.txt` với một mã sinh viên mỗi dòng. Mã phân biệt chữ hoa/thường, dùng ký tự ASCII chữ, số, gạch ngang hoặc gạch dưới.
 
 ```bash
 python3 teacher/provision.py roster.txt
@@ -43,21 +45,20 @@ rebuild ai-backdoor-01
 
 Lần dựng đầu tiên cần kéo base image và cài các gói Python. `rebuild` dựng image và khởi động lab. Sau lần dựng, chạy `stoplab` rồi mở lại bằng `labtainer ai-backdoor-01`. Nếu cấp VM cho sinh viên, có thể bàn giao VM đã dựng image và đã dừng phiên thử. Nếu phát ZIP để mỗi sinh viên tự cài, dùng cùng quy trình dựng lần đầu. Khi phát hành lại sau thay đổi, dựng trên bản cài sạch hoặc thay thư mục lab cũ bằng bản mới rồi dùng `rebuild ai-backdoor-01 -f`.
 
-Hai terminal dùng chung thư mục nhà của container `analyst`. Sinh viên bắt đầu từ `~/ai-backdoor/README.md`. Trình duyệt trong VM cần truy cập được URL HTTPS của giảng viên. Sinh viên có thể mở URL từ máy host rồi chép kết quả JSON vào thư mục minh chứng bên trong container. Staging và Netron chạy ở loopback trong container sinh viên.
+Hai terminal dùng chung thư mục nhà của container `analyst`. Sinh viên bắt đầu từ `~/ai-backdoor/README.md`. Trong Firefox của container `analyst`, mở `http://172.29.61.20:8080/` và đăng nhập bằng `student` và `lab-practice`. Staging và Netron chạy ở loopback của container `analyst`.
 
 ## 3. Thu bài và chấm
 
-Sinh viên lưu bài trong `~/ai-backdoor/evidence`. `checkwork` kiểm tra hiện diện minh chứng. `stoplab` tạo tệp `.lab` để nộp qua LMS. Khi chấm, lấy mã sinh viên từ danh sách hoặc LMS.
+Sinh viên lưu bài trong `~/ai-backdoor/evidence`. `checkwork` kiểm tra minh chứng. `stoplab` tạo tệp `.lab`. Chấm minh chứng của bản cục bộ như sau:
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r student/requirements.txt
-python teacher/check_submission.py /path/to/submission.lab \
-    --student-id B23DCCN001 --auth-file private/auth.json
+python teacher/check_submission.py /path/to/submission.lab
 ```
 
-Công cụ cũng nhận trực tiếp thư mục `evidence/`. Công cụ đối chiếu dữ liệu bằng hai mô hình đã phát hành và cho tối đa 62 điểm. Dùng [rubric dành cho giảng viên](teacher/RUBRIC.md) để chấm 38 điểm còn lại và đánh giá từng phần khi cần.
+Công cụ cũng nhận trực tiếp thư mục `evidence/` và cho tối đa 62 điểm. Với minh chứng từ web dùng chung của lớp, thêm `--student-id B23DCCN001 --auth-file private/auth.json` để xác minh HMAC bằng khóa của lớp. Dùng [rubric dành cho giảng viên](teacher/RUBRIC.md) để chấm 38 điểm còn lại.
 
 ## 4. Dựng lại fixture và gói phát hành
 
@@ -72,9 +73,9 @@ Nếu thay fixture, dùng cùng một bộ tệp để đóng gói cho sinh viê
 
 ## 5. Phát hành IModule
 
-[Repo công khai dành cho sinh viên](https://github.com/DangwKiem/ai-backdoor-01-lab) có cả gói IModule và bản ZIP. IModule dùng image Linux x86-64 `dangkiem/ai-backdoor-01.ai-backdoor-01.student:latest`.
+[Repo công khai dành cho sinh viên](https://github.com/DangwKiem/ai-backdoor-01-lab) có cả gói IModule và bản ZIP. IModule dùng hai image Linux x86-64 `dangkiem/ai-backdoor-01.ai-backdoor-01.student:latest` và `dangkiem/ai-backdoor-01.securemail.student:latest`.
 
-Khi cập nhật, dựng lại gói ZIP và phát hành lại image sinh viên cùng phiên bản. Cấu hình bản phát hành cần có `REGISTRY dangkiem` và `BASE_REGISTRY labtainers` trong `GLOBAL_SETTINGS`. Trên máy Labtainers có bộ Designer, dùng `./publish.py -d -l ai-backdoor-01` từ `$LABTAINER_DIR/distrib` để xuất image kèm nhãn tương thích của Labtainers. Sau đó tạo IModule từ gói ZIP cùng phiên bản:
+Khi cập nhật, dựng lại gói ZIP và phát hành hai image cùng phiên bản. Cấu hình bản phát hành cần có `REGISTRY dangkiem` và `BASE_REGISTRY labtainers` trong `GLOBAL_SETTINGS`. Trên máy Labtainers có bộ Designer, dùng `./publish.py -d -l ai-backdoor-01` từ `$LABTAINER_DIR/distrib` để xuất image kèm nhãn tương thích của Labtainers. Sau đó tạo IModule từ gói ZIP cùng phiên bản:
 
 ```bash
 python teacher/package_imodule.py dangkiem --out imodule.tar

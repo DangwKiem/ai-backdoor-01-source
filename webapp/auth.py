@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 LAB_ID = "AI-Backdoor-01"
+PRACTICE_STUDENT_ID = "student"
 CHALLENGE_ID = "trigger-v1"
 SESSION_TTL = 3600
 STUDENT_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")

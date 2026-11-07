@@ -1,4 +1,4 @@
-"""Make the installable Labtainers ZIP without instructor files or credentials."""
+"""Make the installable Labtainers ZIP with the local practice web service."""
 
 import argparse
 from pathlib import Path
@@ -34,6 +34,12 @@ def main():
         files[Path(LAB, "ai-backdoor", name)] = source
         if name.startswith("requirements"):
             files[Path(LAB, "_system", "opt", "ai-backdoor", name)] = source
+    server = Path("securemail", "_system", "opt", "securemail")
+    for name in ("inference.py", "model_deployed.onnx", "model_original.onnx",
+                 "requirements-runtime.txt", "vocabulary.json"):
+        files[server / name] = ROOT / "student" / name
+    for name in ("app.py", "auth.py", "index.html", "practice.py"):
+        files[server / name] = ROOT / "webapp" / name
     for path in files.values():
         if not path.is_file():
             parser.error(f"Missing file: {path}")

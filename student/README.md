@@ -10,7 +10,7 @@ source /opt/ai-backdoor/venv/bin/activate
 mkdir -p evidence
 ```
 
-Mỗi terminal mới cần kích hoạt môi trường Python. Nếu làm từ thư mục phát hành bên ngoài Labtainers, vào thư mục chứa hướng dẫn này rồi tạo venv với Python 3.11 hoặc 3.12 và cài `requirements.txt`. Hãy nhận URL SecureMail AI và mã đăng nhập riêng từ giảng viên.
+Mỗi terminal mới cần kích hoạt môi trường Python. SecureMail AI tự khởi động cùng lab. Nếu chạy các script phân tích bên ngoài Labtainers, tạo venv với Python 3.11 hoặc 3.12 và cài `requirements.txt`.
 
 ## 1. Kiểm tra tính toàn vẹn · 20 điểm
 
@@ -40,9 +40,15 @@ So sánh `evidence/analysis.csv` với thông tin input/output trong log. Cột 
 
 ## 3. Xác minh trên web app · 25 điểm
 
-Mở URL do giảng viên cung cấp trong cửa sổ duyệt riêng tư. Đăng nhập bằng mã sinh viên và mã đăng nhập đã cấp. Thử email lừa đảo đối chứng, sau đó thử cùng email có ứng viên ở nhiệm vụ 2. Quan sát `label`, `aux_score`, `confirmed` và `receipt`.
+Trong terminal `analyst`, mở web app cục bộ:
 
-Khi hệ thống xác nhận, tải `web-proof.json` và lưu trong `~/ai-backdoor/evidence/` với đúng tên. Nếu trình duyệt chạy ngoài container, mở JSON đã tải rồi chép nguyên nội dung vào `evidence/web-proof.json` bên trong terminal. Có thể nộp thêm ảnh chụp kết quả. Đăng xuất sau khi lưu bằng chứng. Giữ mã đăng nhập và cookie ngoài bài nộp. Trong báo cáo, giải thích vai trò của phiên đã xác thực và HMAC-SHA256 trong việc gắn mã xác nhận với sinh viên.
+```bash
+firefox --private-window http://172.29.61.20:8080/ &
+```
+
+Đăng nhập bằng mã sinh viên **`student`** và mã đăng nhập **`lab-practice`**. Nếu vừa khởi động lab và trang chưa mở được, đợi vài giây rồi tải lại. Thử email lừa đảo đối chứng, sau đó thử cùng email có ứng viên ở nhiệm vụ 2. Quan sát `label`, `aux_score`, `confirmed` và `receipt`.
+
+Khi hệ thống xác nhận, tải `web-proof.json` và lưu trong `~/ai-backdoor/evidence/` với đúng tên. Firefox có thể tải tệp vào `~/Downloads`; nếu vậy, chép tệp vào `evidence/`. Có thể nộp thêm ảnh chụp kết quả. Đăng xuất sau khi lưu bằng chứng. Trong báo cáo, giải thích cách phiên đăng nhập xác định tài khoản và cách dịch vụ dùng khóa HMAC của phiên bản lab để tạo mã thực hành.
 
 ## 4. Đối chiếu graph và khôi phục staging · 25 điểm
 
@@ -88,4 +94,4 @@ So sánh hai tệp `staging-before.json` và `staging-after.json`. Ghi SHA-256 c
 
 Trong `evidence/report.md`, ghi mã sinh viên và trình bày các kết luận theo bốn nhiệm vụ. Kiểm tra thư mục `evidence/` có báo cáo, `integrity.sha256`, `analysis.csv`, `probe.log`, `web-proof.json`, `graph.txt` và hai tệp JSON của staging.
 
-Từ terminal **host Labtainers**, chạy `checkwork` để xem các kiểm tra hiện diện minh chứng. Sau đó chạy `stoplab` và nộp tệp `.lab` theo đường dẫn lệnh in ra. Giảng viên đối chiếu nội dung minh chứng và xác minh HMAC theo mã sinh viên.
+Từ terminal **host Labtainers**, chạy `checkwork` để xem các kiểm tra hiện diện minh chứng. Sau đó chạy `stoplab` để tạo tệp `.lab` theo đường dẫn lệnh in ra. Nếu lớp yêu cầu nộp bài, gửi tệp đó theo hướng dẫn. Mã HMAC cục bộ là minh chứng thực hành trong lab của bạn.

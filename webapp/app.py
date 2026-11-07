@@ -1,4 +1,4 @@
-"""Shared instructor web app. Both models are loaded from the released fixtures."""
+"""SecureMail AI web app. Both models are loaded from the released fixtures."""
 
 import os
 from contextlib import asynccontextmanager
@@ -25,7 +25,8 @@ class Email(BaseModel):
     text: str = Field(min_length=1, max_length=8192)
 
 
-def create_app(auth_path, cookie_secure=True):
+def create_app(auth_path, cookie_secure=True, *, practice=False):
+    mode = "practice" if practice else "classroom"
     @asynccontextmanager
     async def lifespan(app):
         app.state.auth = Auth.load(auth_path)
@@ -48,7 +49,7 @@ def create_app(auth_path, cookie_secure=True):
 
     @app.get("/health")
     def health():
-        return {"status": "ok", "lab": LAB_ID}
+        return {"status": "ok", "lab": LAB_ID, "mode": mode}
 
     @app.post("/api/login")
     def login(payload: Login, response: Response):
@@ -81,6 +82,7 @@ def create_app(auth_path, cookie_secure=True):
         )
         return {
             "lab": LAB_ID,
+            "mode": mode,
             "student_id": student_id,
             "model_sha256": app.state.deployed.sha256,
             **result,

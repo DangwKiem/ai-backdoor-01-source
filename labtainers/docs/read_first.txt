@@ -4,5 +4,6 @@ In an analyst terminal, run:
   cd ~/ai-backdoor
   less README.md
 
-Ask your instructor for the SecureMail AI URL and your individual login code.
+SecureMail AI starts with the lab at http://172.29.61.20:8080/.
+Open it in Firefox inside the analyst container. Login: student / lab-practice.
 Save evidence in ~/ai-backdoor/evidence before running stoplab.

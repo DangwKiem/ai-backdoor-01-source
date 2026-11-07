@@ -1,0 +1,15 @@
+[Unit]
+Description=SecureMail AI practice service
+After=network.target
+
+[Service]
+User=securemail
+WorkingDirectory=/opt/securemail
+StateDirectory=ai-backdoor-securemail
+StateDirectoryMode=0700
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/securemail/venv/bin/uvicorn practice:from_env --factory --host 0.0.0.0 --port 8080
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

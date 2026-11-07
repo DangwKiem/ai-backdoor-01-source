@@ -12,7 +12,7 @@ from zipfile import BadZipFile, ZipFile
 from build_models import STUDENT, TRIGGER
 
 sys.path[:0] = [str(STUDENT), str(STUDENT.parent / "webapp")]
-from auth import Auth, LAB_ID
+from auth import Auth, HEX_DIGEST, LAB_ID, PRACTICE_STUDENT_ID
 from inference import Classifier, load_vocabulary
 
 MAX_EVIDENCE = 2_000_000
@@ -98,12 +98,22 @@ def check_web(read, models, auth, student_id):
     proof = json.loads(read("web-proof.json"))
     text = proof["text"]
     expected = models["deployed"].predict(text)
+    if auth is None:
+        valid_receipt = (
+            proof.get("mode") == "practice" and proof["student_id"] == PRACTICE_STUDENT_ID
+            and HEX_DIGEST.fullmatch(proof["receipt"]) is not None
+        )
+    else:
+        valid_receipt = (
+            proof.get("mode", "classroom") == "classroom" and proof["student_id"] == student_id
+            and auth.verify_receipt(student_id, proof["receipt"])
+        )
     return (
-        proof["lab"] == LAB_ID and proof["student_id"] == student_id
+        proof["lab"] == LAB_ID and valid_receipt
         and proof["model_sha256"] == models["deployed"].sha256
         and proof["confirmed"] is True and expected["aux_score"] == 1.0
         and expected["label"] == "SAFE" and models["original"].predict(text)["label"] == "PHISHING"
-        and same_prediction(proof, expected) and auth.verify_receipt(student_id, proof["receipt"])
+        and same_prediction(proof, expected)
     )
 
 
@@ -130,11 +140,13 @@ def check_staging(read, models, inputs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("submission", type=Path)
-    parser.add_argument("--student-id", required=True, help="Use the roster ID from the LMS")
-    parser.add_argument("--auth-file", type=Path, required=True)
+    parser.add_argument("--student-id", help="Roster ID for classroom HMAC verification")
+    parser.add_argument("--auth-file", type=Path, help="Verify receipts from the classroom server")
     args = parser.parse_args()
-    auth = Auth.load(args.auth_file)
-    if args.student_id not in auth.roster:
+    if bool(args.student_id) != bool(args.auth_file):
+        parser.error("--student-id và --auth-file phải được dùng cùng nhau.")
+    auth = Auth.load(args.auth_file) if args.auth_file else None
+    if auth and args.student_id not in auth.roster:
         parser.error("Mã sinh viên không có trong danh sách của lớp.")
     vocabulary = load_vocabulary()
     models = {name: Classifier(STUDENT / f"model_{name}.onnx", vocabulary)
@@ -148,7 +160,8 @@ def main():
     checks = [
         ("SHA-256", 12, lambda: check_integrity(read, models)),
         ("CSV inference", 20, lambda: check_analysis(read, models, inputs, candidates)),
-        ("Xác nhận web", 20, lambda: check_web(read, models, auth, args.student_id)),
+        ("Xác nhận web" if auth else "Minh chứng web cục bộ", 20,
+         lambda: check_web(read, models, auth, args.student_id)),
         ("Kiểm thử staging", 10, lambda: check_staging(read, models, inputs)),
     ]
     total = 0
