@@ -70,4 +70,16 @@ python teacher/package_student.py
 
 Nếu thay fixture, dùng cùng một bộ tệp để đóng gói cho sinh viên, dựng lại web app và chấm lớp đó. Phát **ai-backdoor-01-labtainers.zip** cho sinh viên. Thư mục nguồn chứa công cụ dựng, đáp án và bộ chấm dành cho giảng viên.
 
+## 5. Phát hành IModule
+
+[Repo công khai dành cho sinh viên](https://github.com/DangwKiem/ai-backdoor-01-lab) có cả gói IModule và bản ZIP. IModule dùng image Linux x86-64 `dangkiem/ai-backdoor-01.ai-backdoor-01.student:latest`.
+
+Khi cập nhật, dựng lại gói ZIP và phát hành lại image sinh viên cùng phiên bản. Cấu hình bản phát hành cần có `REGISTRY dangkiem` và `BASE_REGISTRY labtainers` trong `GLOBAL_SETTINGS`. Trên máy Labtainers có bộ Designer, dùng `./publish.py -d -l ai-backdoor-01` từ `$LABTAINER_DIR/distrib` để xuất image kèm nhãn tương thích của Labtainers. Sau đó tạo IModule từ gói ZIP cùng phiên bản:
+
+```bash
+python teacher/package_imodule.py dangkiem --out imodule.tar
+```
+
+Cập nhật `imodule.tar` cùng gói ZIP trên repo sinh viên. Thử cài từ URL công khai trên một VM Labtainers sạch trước khi phát bản cập nhật.
+
 Tham khảo [Labtainers Lab Designer User Guide](https://nps.edu/documents/107523844/117289221/labdesigner.pdf) và [mã nguồn Labtainers của NPS](https://github.com/mfthomps/Labtainers).
